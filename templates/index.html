@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Missed Opportunity Calculator</title>
+  <!-- Import Materialize CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <!-- Google Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      padding: 20px;
+    }
+    .container {
+      margin-top: 20px;
+    }
+    /* Header styling (static) */
+    .page-header {
+      color: red;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* Input Section Layout */
+    .input-section .row {
+      margin-bottom: 15px;
+    }
+    /* Output Section */
+    .output-section {
+      margin-top: 40px;
+    }
+    /* Sticky summary container: summary will stick to top when scrolling */
+    #summary_container {
+      position: sticky;
+      top: 0;
+      background-color: white;
+      z-index: 100;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    /* Table Styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .highlight {
+      background-color: #fff9c4 !important;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Main static header -->
+    <h3 class="page-header">Missed Opportunity Calculator</h3>
+    
+    <!-- Input Section -->
+    <div class="card">
+      <div class="card-content input-section">
+        <div class="row">
+          <!-- First row: Stock Ticker, Start Date, End Date -->
+          <div class="input-field col s12 m4">
+            <input id="stock_ticker" type="text" value="TCS.NS">
+            <label for="stock_ticker" class="active">Stock Ticker</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input id="start_date" type="date" value="2020-01-01">
+            <label for="start_date" class="active">Start Date</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input id="end_date" type="date" value="{{ today }}">
+            <label for="end_date" class="active">End Date</label>
+          </div>
+        </div>
+        <div class="row">
+          <!-- Second row: Investment Mode, Investment Type, Investment Value/Number of Shares -->
+          <div class="input-field col s12 m4">
+            <select id="investment_mode">
+              <option value="Periodic" selected>Periodic</option>
+              <option value="Lumpsum">Lumpsum</option>
+            </select>
+            <label>Investment Mode</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <select id="investment_type">
+              <option value="amount" selected>Amount</option>
+              <option value="shares">Shares</option>
+            </select>
+            <label>Investment Type</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input id="investment_value" type="number" value="1000">
+            <label for="investment_value" class="active" id="investment_value_label">Investment Value</label>
+          </div>
+        </div>
+        <div class="row">
+          <!-- Third row: Frequency and Yearly Increment -->
+          <div class="input-field col s12 m6">
+            <select id="frequency">
+              <option value="monthly" selected>Monthly</option>
+              <option value="quarterly">Quarterly</option>
+            </select>
+            <label>Investment Frequency</label>
+          </div>
+          <div class="input-field col s12 m6">
+            <input id="yearly_increment" type="number" value="10">
+            <label for="yearly_increment" class="active">Yearly Increment (%)</label>
+          </div>
+        </div>
+      </div>
+      <div class="card-action center-align">
+        <button id="calculate_button" class="btn waves-effect waves-light">Calculate</button>
+      </div>
+    </div>
+    
+    <!-- Output Section -->
+    <div class="output-section">
+      <!-- Sticky Summary Container -->
+      <div id="summary_container">
+        <h5>Investment Summary</h5>
+        <table id="summary_table" class="striped">
+          <thead>
+            <tr id="summary_header"></tr>
+          </thead>
+          <tbody>
+            <tr id="summary_data"></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Detailed Report Table -->
+      <div>
+        <h5>Investment Report</h5>
+        <table id="report_table" class="striped">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Date</th>
+              <th>Investment Amount</th>
+              <th>Close Price</th>
+              <th>Shares Bought</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Report rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Import jQuery and Materialize JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize Materialize selects.
+      var selects = document.querySelectorAll('select');
+      M.FormSelect.init(selects);
+
+      // Conditional disable for Lumpsum: disable frequency and yearly increment.
+      let modeSelect = document.getElementById("investment_mode");
+      let frequencySelect = document.getElementById("frequency");
+      let yearlyIncrementInput = document.getElementById("yearly_increment");
+      function updateMode() {
+        if (modeSelect.value === "Lumpsum") {
+          frequencySelect.setAttribute("disabled", "disabled");
+          yearlyIncrementInput.setAttribute("disabled", "disabled");
+        } else {
+          frequencySelect.removeAttribute("disabled");
+          yearlyIncrementInput.removeAttribute("disabled");
+        }
+        // Reinitialize to update UI.
+        M.FormSelect.init(document.querySelectorAll('select'));
+      }
+      modeSelect.addEventListener("change", updateMode);
+      updateMode();
+
+      // Update Investment Value label based on Investment Type.
+      let typeSelect = document.getElementById("investment_type");
+      let investmentValueLabel = document.getElementById("investment_value_label");
+      function updateTypeLabel() {
+        if (typeSelect.value === "amount") {
+          investmentValueLabel.innerHTML = "Investment Value";
+        } else {
+          investmentValueLabel.innerHTML = "Number of Shares";
+        }
+      }
+      typeSelect.addEventListener("change", updateTypeLabel);
+      updateTypeLabel();
+    });
+    
+    document.getElementById("calculate_button").addEventListener("click", function() {
+      let stockTicker = document.getElementById("stock_ticker").value;
+      let startDate = document.getElementById("start_date").value;
+      let endDate = document.getElementById("end_date").value;
+      let frequency = document.getElementById("frequency").value;
+      let investmentType = document.getElementById("investment_type").value;
+      let investmentMode = document.getElementById("investment_mode").value;
+      let investmentValue = document.getElementById("investment_value").value;
+      let yearlyIncrement = document.getElementById("yearly_increment").value;
+      
+      fetch("/calculate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          stock_ticker: stockTicker,
+          start_date: startDate,
+          end_date: endDate,
+          frequency: frequency,
+          investment_type: investmentType,
+          investment_mode: investmentMode,
+          investment_value: investmentValue,
+          yearly_increment: yearlyIncrement
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.error) {
+              M.toast({html: data.error, classes: 'red'});
+          } else {
+              // Build summary table as a horizontal table with header and one row.
+              let summaryHeaderRow = document.getElementById("summary_header");
+              let summaryDataRow = document.getElementById("summary_data");
+              summaryHeaderRow.innerHTML = "";
+              summaryDataRow.innerHTML = "";
+              let keys = ["Total Investments Made", "Total Amount Invested", "Total Shares Owned", "Current Value of Shares", "Total Dividends Received", "Total Return", "Percentage Return"];
+              keys.forEach(function(key) {
+                  let th = document.createElement("th");
+                  th.innerHTML = key;
+                  summaryHeaderRow.appendChild(th);
+                  
+                  let td = document.createElement("td");
+                  td.innerHTML = data.summary[key];
+                  if (["Total Return", "Percentage Return", "Total Amount Invested", "Current Value of Shares"].includes(key)) {
+                      td.classList.add("highlight");
+                  }
+                  summaryDataRow.appendChild(td);
+              });
+              
+              // Build detailed report table.
+              let report_tbody = document.getElementById("report_table").getElementsByTagName("tbody")[0];
+              report_tbody.innerHTML = "";
+              let reportKeys = ["year", "date", "investment_amount", "close_price", "shares_bought", "cost"];
+              data.report.forEach(function(rowData) {
+                  let row = report_tbody.insertRow();
+                  reportKeys.forEach(function(key) {
+                      let cell = row.insertCell();
+                      cell.innerHTML = rowData[key];
+                  });
+              });
+          }
+      })
+      .catch(error => {
+          console.error("Error:", error);
+      });
+    });
+  </script>
+</body>
+</html>
