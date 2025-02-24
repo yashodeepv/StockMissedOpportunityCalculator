@@ -15,7 +15,7 @@
     .container {
       margin-top: 20px;
     }
-    /* Header styling (static) */
+    /* Main static header styling */
     .page-header {
       color: red;
       text-align: center;
@@ -25,36 +25,107 @@
     .input-section .row {
       margin-bottom: 15px;
     }
-    /* Output Section */
-    .output-section {
-      margin-top: 40px;
-    }
-    /* Sticky summary container: summary will stick to top when scrolling */
+    /* Sticky summary container */
     #summary_container {
       position: sticky;
       top: 0;
-      background-color: white;
+      background-color: #fff;
       z-index: 100;
-      margin-bottom: 20px;
       padding: 10px;
       border: 1px solid #ddd;
+      margin-bottom: 20px;
     }
-    /* Table Styling */
-    table {
+    @media only screen and (max-width: 600px) {
+      #summary_container {
+        position: relative;
+      }
+    }
+    /* Summary Table Styling */
+    .summary-table {
       width: 100%;
       border-collapse: collapse;
     }
-    th, td {
-      padding: 8px;
+    .summary-table th, .summary-table td {
       border: 1px solid #ddd;
+      padding: 8px;
       text-align: center;
     }
-    th {
+    .summary-table th {
       background-color: #f2f2f2;
     }
     .highlight {
       background-color: #fff9c4 !important;
       font-weight: bold;
+    }
+    /* Responsive Summary Table: vertical layout on mobile */
+    @media only screen and (max-width: 600px) {
+      #summary_table thead {
+        display: none;
+      }
+      #summary_table tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+      }
+      #summary_table td {
+        display: block;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+      }
+      #summary_table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 40%;
+        padding-right: 10px;
+        text-align: left;
+        font-weight: bold;
+      }
+    }
+    /* Report Table Styling */
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .report-table th, .report-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    .report-table th {
+      background-color: #f2f2f2;
+    }
+    /* Responsive Report Table: vertical layout on mobile */
+    @media only screen and (max-width: 600px) {
+      #report_table thead {
+        display: none;
+      }
+      #report_table tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+      }
+      #report_table td {
+        display: block;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+      }
+      #report_table td:before {
+        position: absolute;
+        left: 10px;
+        width: 40%;
+        padding-right: 10px;
+        text-align: left;
+        font-weight: bold;
+      }
+      #report_table td:nth-child(1):before { content: "Year:"; }
+      #report_table td:nth-child(2):before { content: "Date:"; }
+      #report_table td:nth-child(3):before { content: "Inv. Amt:"; }
+      #report_table td:nth-child(4):before { content: "Close Prc:"; }
+      #report_table td:nth-child(5):before { content: "Shares:"; }
+      #report_table td:nth-child(6):before { content: "Cost:"; }
     }
   </style>
 </head>
@@ -124,10 +195,10 @@
     
     <!-- Output Section -->
     <div class="output-section">
-      <!-- Sticky Summary Container -->
+      <!-- Sticky Summary Container (sticky only on larger screens) -->
       <div id="summary_container">
         <h5>Investment Summary</h5>
-        <table id="summary_table" class="striped">
+        <table id="summary_table" class="summary-table">
           <thead>
             <tr id="summary_header"></tr>
           </thead>
@@ -139,7 +210,7 @@
       <!-- Detailed Report Table -->
       <div>
         <h5>Investment Report</h5>
-        <table id="report_table" class="striped">
+        <table id="report_table" class="report-table">
           <thead>
             <tr>
               <th>Year</th>
@@ -180,7 +251,6 @@
           frequencySelect.removeAttribute("disabled");
           yearlyIncrementInput.removeAttribute("disabled");
         }
-        // Reinitialize to update UI.
         M.FormSelect.init(document.querySelectorAll('select'));
       }
       modeSelect.addEventListener("change", updateMode);
@@ -229,12 +299,13 @@
           if (data.error) {
               M.toast({html: data.error, classes: 'red'});
           } else {
-              // Build summary table as a horizontal table with header and one row.
+              // Build summary table as a horizontal table on desktop,
+              // and vertical layout on mobile.
               let summaryHeaderRow = document.getElementById("summary_header");
               let summaryDataRow = document.getElementById("summary_data");
               summaryHeaderRow.innerHTML = "";
               summaryDataRow.innerHTML = "";
-              let keys = ["Total Investments Made", "Total Amount Invested", "Total Shares Owned", "Current Value of Shares", "Total Dividends Received", "Total Return", "Percentage Return"];
+              let keys = ["Investments", "Amount Invested", "Shares Owned", "Current Value", "Dividends", "Return", "Return %"];
               keys.forEach(function(key) {
                   let th = document.createElement("th");
                   th.innerHTML = key;
@@ -242,7 +313,8 @@
                   
                   let td = document.createElement("td");
                   td.innerHTML = data.summary[key];
-                  if (["Total Return", "Percentage Return", "Total Amount Invested", "Current Value of Shares"].includes(key)) {
+                  td.setAttribute("data-label", key);
+                  if (["Return", "Return %", "Amount Invested", "Current Value"].includes(key)) {
                       td.classList.add("highlight");
                   }
                   summaryDataRow.appendChild(td);

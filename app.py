@@ -8,18 +8,9 @@ import logging
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def format_rupee(number):
-    number = int(number)
-    if number < 1000:
-        return f"₹{str(number)}"
-    elif number < 100000:
-        return f"₹{number // 1000},{number % 1000:03d}"
-    elif number < 10000000:
-        return f"₹{number // 100000},{number % 100000 // 1000:02d},{number % 1000:03d}"
-    else:
-        return f"₹{number // 10000000},{number % 10000000 // 100000:02d},{number % 100000 // 1000:02d},{number % 1000:03d}"
-
-
+def format_rupee(amount):
+    """Format a number as Indian rupees."""
+    return f"₹{amount:,.2f}"
 
 @app.route('/')
 def index():
@@ -37,7 +28,6 @@ def calculate():
     frequency = data.get('frequency')            # "monthly" or "quarterly"
     investment_type = data.get('investment_type')  # "amount" or "shares"
     investment_mode = data.get('investment_mode')  # "Periodic" or "Lumpsum"
-    
     try:
         investment_value = float(data.get('investment_value'))
     except:
@@ -75,7 +65,7 @@ def calculate():
         start_ts = pd.Timestamp(start_date)
         effective_end_ts = pd.Timestamp(effective_end_date)
 
-    # Determine investment dates
+    # Determine investment dates.
     if investment_mode == "Lumpsum":
         idx = price_data.index.searchsorted(start_ts, side='left')
         if idx < len(price_data.index):
@@ -140,15 +130,15 @@ def calculate():
     total_return = current_value + total_dividends - total_cost
     percent_return = (total_return / total_cost * 100) if total_cost > 0 else 0
 
-    # Build summary with only desired keys.
+    # Build a summary dictionary with shorter labels.
     summary = {
-        "Total Investments Made": str(len(investment_dates)),
-        "Total Amount Invested": format_rupee(total_cost),
-        "Total Shares Owned": str(total_shares),
-        "Current Value of Shares": format_rupee(current_value),
-        "Total Dividends Received": format_rupee(total_dividends),
-        "Total Return": format_rupee(total_return),
-        "Percentage Return": f"{percent_return:.2f}%"
+        "Investments": str(len(investment_dates)),
+        "Amount Invested": format_rupee(total_cost),
+        "Shares Owned": str(total_shares),
+        "Current Value": format_rupee(current_value),
+        "Dividends": format_rupee(total_dividends),
+        "Return": format_rupee(total_return),
+        "Return %": f"{percent_return:.2f}%"
     }
 
     app.logger.info("Summary: %s", summary)
@@ -156,6 +146,3 @@ def calculate():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
